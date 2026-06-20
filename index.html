@@ -12,7 +12,9 @@
   .fade-in { animation: fadeIn 0.4s ease-out; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulseArrow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .pulse-arrow { animation: pulseArrow 2s ease-in-out infinite; }
+  .spinner { animation: spin 1s linear infinite; }
   
   .login-bg { background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 50%, #eff6ff 100%); }
   .role-tab { transition: all 0.2s ease; }
@@ -59,12 +61,42 @@
   .password-toggle:hover { color: #334155; }
 
   .file-preview { font-family: 'Courier New', monospace; font-size: 0.75rem; background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 0.5rem; max-height: 300px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5; }
+
+  .db-status-online { background: #dcfce7; color: #166534; }
+  .db-status-offline { background: #fee2e2; color: #991b1b; }
+  .db-status-loading { background: #fef3c7; color: #92400e; }
 </style>
 </head>
 <body class="min-h-screen">
 
+<!-- ==================== LOADING SCREEN ==================== -->
+<div id="loading-screen" class="login-bg min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 fade-in text-center">
+    <div class="flex justify-center mb-6">
+      <div class="nungu-logo-wrapper">
+        <div class="nungu-logo-container login-size">
+          <div class="nungu-circle-bg"></div>
+          <div class="nungu-letter-n">N</div>
+        </div>
+      </div>
+    </div>
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-slate-900">Nungu <span class="text-emerald-600">Connect</span></h1>
+      <p class="text-slate-500 mt-1">Referral System Dashboard</p>
+    </div>
+    <div class="flex flex-col items-center gap-3 py-6">
+      <svg class="w-10 h-10 text-emerald-600 spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <p class="text-sm font-medium text-slate-700" id="loading-message">Connecting to Supabase...</p>
+      <p class="text-xs text-slate-500" id="loading-submessage">Syncing client data</p>
+    </div>
+  </div>
+</div>
+
 <!-- ==================== LOGIN SCREEN ==================== -->
-<div id="login-screen" class="login-bg min-h-screen flex items-center justify-center p-4">
+<div id="login-screen" class="login-bg min-h-screen flex items-center justify-center p-4 hidden">
   <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 fade-in">
     <div class="flex justify-center mb-6">
       <div class="nungu-logo-wrapper">
@@ -125,6 +157,10 @@
         </div>
       </div>
       <div class="flex items-center gap-3">
+        <div id="db-status-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium db-status-loading">
+          <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+          <span id="db-status-text">Connecting...</span>
+        </div>
         <div class="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
           <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
           <span class="text-xs font-medium text-slate-700" id="header-user-info">Sanele9515 · Coordinator</span>
@@ -261,7 +297,6 @@
           <p class="text-xs text-slate-500 mt-1">R5000 per successful purchase</p>
         </div>
 
-        <!-- ClientLists.txt Export Card -->
         <div class="card-green bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg p-4 text-white">
           <h3 class="font-bold mb-2 flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -331,7 +366,7 @@
 
 <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
   <div class="max-w-[1400px] mx-auto px-4 text-center text-xs text-slate-500">
-    <p>Nungu Tech © 2026 · Nungu Connect Referral System</p>
+    <p>Nungu Tech © 2026 · Nungu Connect Referral System · Powered by Supabase</p>
   </div>
 </footer>
 </div>
@@ -378,7 +413,7 @@
       <div class="flex gap-3">
         <button type="button" id="btn-delete-client" onclick="deleteClient()" class="px-4 py-2.5 rounded-xl btn-red text-white font-medium hidden">Delete</button>
         <button type="button" onclick="closeModal('modal-client')" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-50">Cancel</button>
-        <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl btn-blue text-white font-medium shadow-lg shadow-blue-600/20">Save</button>
+        <button type="submit" id="btn-save-client" class="flex-1 px-4 py-2.5 rounded-xl btn-blue text-white font-medium shadow-lg shadow-blue-600/20">Save</button>
       </div>
     </form>
   </div>
@@ -447,7 +482,6 @@
   </div>
 </div>
 
-<!-- File Preview Modal -->
 <div id="modal-file-preview" class="fixed inset-0 z-50 hidden modal-overlay flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 fade-in max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between mb-4">
@@ -473,6 +507,11 @@
 </div>
 
 <script>
+// ============ SUPABASE CONFIGURATION ============
+const SUPABASE_URL = 'https://xysqgtckdukpnnxdeffy.supabase.co/rest/v1';
+const SUPABASE_KEY = 'sb_publishable_cyXnvWlQtfuRDW5MK1HFuQ_qWeqOBZW';
+const SUPABASE_TABLE = 'Clients';
+
 const CREDENTIALS = {
   salesman: { username: 'Khulekani369', password: 'Kpass123', name: 'Khulekani', role: 'Car Salesperson' },
   bureau: { username: 'Wendy369', password: 'Wendy@Shozi123', name: 'Wendy', role: 'Credit Bureau' },
@@ -484,24 +523,169 @@ let selectedLoginRole = 'coordinator';
 let currentUser = null;
 let currentView = 'all';
 let nenguData = { clients: [], totalRewards: 0, fileLastUpdated: null };
+let dbConnectionStatus = 'loading'; // loading | online | offline
 
-function togglePasswordVisibility() {
-  const passwordInput = document.getElementById('login-password');
-  const eyeIcon = document.getElementById('eye-icon');
-  const eyeOffIcon = document.getElementById('eye-off-icon');
-  const toggleBtn = document.getElementById('password-toggle-btn');
+// ============ SUPABASE API HELPERS ============
+function setLoadingMessage(msg, submsg) {
+  const m = document.getElementById('loading-message');
+  const s = document.getElementById('loading-submessage');
+  if (m) m.textContent = msg;
+  if (s) s.textContent = submsg || '';
+}
+
+function updateDbStatus(status) {
+  dbConnectionStatus = status;
+  const badge = document.getElementById('db-status-badge');
+  const text = document.getElementById('db-status-text');
+  if (!badge || !text) return;
   
-  if (passwordInput.type === 'password') {
-    passwordInput.type = 'text';
-    eyeIcon.classList.add('hidden');
-    eyeOffIcon.classList.remove('hidden');
-    toggleBtn.title = 'Hide password';
+  if (status === 'online') {
+    badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium db-status-online';
+    badge.innerHTML = '<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div><span id="db-status-text">Supabase Connected</span>';
+  } else if (status === 'offline') {
+    badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium db-status-offline';
+    badge.innerHTML = '<div class="w-2 h-2 rounded-full bg-red-500"></div><span id="db-status-text">Offline Mode</span>';
   } else {
-    passwordInput.type = 'password';
-    eyeIcon.classList.remove('hidden');
-    eyeOffIcon.classList.add('hidden');
-    toggleBtn.title = 'Show password';
+    badge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium db-status-loading';
+    badge.innerHTML = '<div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div><span id="db-status-text">Connecting...</span>';
   }
+}
+
+async function supabaseFetch(endpoint, options = {}) {
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
+  
+  const response = await fetch(`${SUPABASE_URL}${endpoint}`, {
+    ...options,
+    headers
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(`Supabase ${response.status}: ${response.statusText} ${errorText}`);
+  }
+  
+  // Handle 204 No Content (e.g., DELETE)
+  if (response.status === 204) return null;
+  
+  return response.json();
+}
+
+async function fetchAllClients() {
+  setLoadingMessage('Fetching clients from Supabase...', 'Reading from Clients table');
+  const data = await supabaseFetch(`/${SUPABASE_TABLE}?order=createdAt.desc`, { method: 'GET' });
+  return Array.isArray(data) ? data : [];
+}
+
+async function insertClient(client) {
+  const result = await supabaseFetch(`/${SUPABASE_TABLE}`, {
+    method: 'POST',
+    headers: { 'Prefer': 'return=representation' },
+    body: JSON.stringify(client)
+  });
+  return Array.isArray(result) ? result[0] : result;
+}
+
+async function updateClient(clientId, updates) {
+  const result = await supabaseFetch(`/${SUPABASE_TABLE}?id=eq.${encodeURIComponent(clientId)}`, {
+    method: 'PATCH',
+    headers: { 'Prefer': 'return=representation' },
+    body: JSON.stringify(updates)
+  });
+  return Array.isArray(result) ? result[0] : result;
+}
+
+async function deleteClientFromDb(clientId) {
+  await supabaseFetch(`/${SUPABASE_TABLE}?id=eq.${encodeURIComponent(clientId)}`, {
+    method: 'DELETE'
+  });
+}
+
+async function seedDemoData() {
+  setLoadingMessage('Seeding demo data...', 'Creating sample clients');
+  const demoClients = [
+    { id: 'REF-001', name: 'John Smith', contact: '082 111 2222', declinedReason: 'Low credit score', bureauNotes: '', status: 'In Credit Repair', createdAt: Date.now() - 86400000*3 },
+    { id: 'REF-002', name: 'Lisa M.', contact: 'lisa.m@email.com', declinedReason: 'Previous defaults', bureauNotes: '', status: 'In Credit Repair', createdAt: Date.now() - 86400000*2 },
+    { id: 'REF-003', name: 'David P.', contact: '073 444 5555', declinedReason: 'Insufficient income', bureauNotes: '', status: 'Pending', createdAt: Date.now() - 86400000 },
+    { id: 'REF-004', name: 'Mark T.', contact: 'mark.t@email.com', declinedReason: 'No credit history', bureauNotes: 'Credit profile established', status: 'Repaired', createdAt: Date.now() - 86400000*5 },
+    { id: 'REF-005', name: 'Sarah K.', contact: '082 999 8888', declinedReason: 'High debt ratio', bureauNotes: 'Debt reduced, score up 150pts', status: 'Cleared', createdAt: Date.now() - 86400000*4 },
+    { id: 'REF-006', name: 'Peter G.', contact: 'peter.g@email.com', declinedReason: 'Judgment on record', bureauNotes: 'Judgment rescinded', status: 'Repaired', createdAt: Date.now() - 86400000*6 },
+    { id: 'REF-007', name: 'Anna B.', contact: '072 333 4444', declinedReason: 'Low score', bureauNotes: 'Score improved', status: 'Referred Back', createdAt: Date.now() - 86400000*7 },
+  ];
+  
+  // Insert all demo clients
+  for (const client of demoClients) {
+    try {
+      await insertClient(client);
+    } catch (err) {
+      console.warn('Failed to seed client:', client.id, err);
+    }
+  }
+  
+  return demoClients;
+}
+
+// ============ DATA LAYER (Supabase-first with localStorage fallback) ============
+async function loadData() {
+  try {
+    updateDbStatus('loading');
+    const clients = await fetchAllClients();
+    
+    if (clients.length === 0) {
+      // Empty table - seed with demo data
+      const seeded = await seedDemoData();
+      nenguData.clients = seeded;
+    } else {
+      nenguData.clients = clients;
+    }
+    
+    // Compute totalRewards from purchased clients
+    nenguData.totalRewards = nenguData.clients.filter(c => c.status === 'Purchased').length * REWARD;
+    nenguData.fileLastUpdated = Date.now();
+    
+    updateDbStatus('online');
+    updateClientListsFile();
+  } catch (error) {
+    console.error('Supabase connection failed:', error);
+    updateDbStatus('offline');
+    
+    // Fallback to localStorage
+    setLoadingMessage('Supabase unavailable', 'Loading from local cache');
+    const saved = localStorage.getItem('nunguConnectDataV2');
+    if (saved) {
+      nenguData = JSON.parse(saved);
+    } else {
+      // Initialize with demo data locally
+      nenguData.clients = [
+        { id: 'REF-001', name: 'John Smith', contact: '082 111 2222', declinedReason: 'Low credit score', bureauNotes: '', status: 'In Credit Repair', createdAt: Date.now() - 86400000*3 },
+        { id: 'REF-002', name: 'Lisa M.', contact: 'lisa.m@email.com', declinedReason: 'Previous defaults', bureauNotes: '', status: 'In Credit Repair', createdAt: Date.now() - 86400000*2 },
+        { id: 'REF-003', name: 'David P.', contact: '073 444 5555', declinedReason: 'Insufficient income', bureauNotes: '', status: 'Pending', createdAt: Date.now() - 86400000 },
+        { id: 'REF-004', name: 'Mark T.', contact: 'mark.t@email.com', declinedReason: 'No credit history', bureauNotes: 'Credit profile established', status: 'Repaired', createdAt: Date.now() - 86400000*5 },
+        { id: 'REF-005', name: 'Sarah K.', contact: '082 999 8888', declinedReason: 'High debt ratio', bureauNotes: 'Debt reduced, score up 150pts', status: 'Cleared', createdAt: Date.now() - 86400000*4 },
+        { id: 'REF-006', name: 'Peter G.', contact: 'peter.g@email.com', declinedReason: 'Judgment on record', bureauNotes: 'Judgment rescinded', status: 'Repaired', createdAt: Date.now() - 86400000*6 },
+        { id: 'REF-007', name: 'Anna B.', contact: '072 333 4444', declinedReason: 'Low score', bureauNotes: 'Score improved', status: 'Referred Back', createdAt: Date.now() - 86400000*7 },
+      ];
+      nenguData.totalRewards = 0;
+    }
+    
+    // Cache to localStorage as backup
+    localStorage.setItem('nunguConnectDataV2', JSON.stringify(nenguData));
+    updateClientListsFile();
+  }
+}
+
+async function saveData() {
+  // Always update localStorage cache
+  localStorage.setItem('nunguConnectDataV2', JSON.stringify(nenguData));
+  updateClientListsFile();
+  
+  // Note: Individual client operations (insert/update/delete) are handled
+  // directly via Supabase API calls in their respective functions.
+  // This function ensures local cache and file are in sync.
 }
 
 // ============ CLIENT LISTS FILE GENERATION ============
@@ -522,10 +706,10 @@ function generateClientListsContent() {
   content += '║                    External File: ClientLists.txt                ║\n';
   content += '╚══════════════════════════════════════════════════════════════════╝\n\n';
   content += `Generated: ${timestamp}\n`;
+  content += `Data Source: Supabase (https://xysqgtckdukpnnxdeffy.supabase.co)\n`;
   content += `Total Clients: ${nenguData.clients.length}\n\n`;
   content += '═'.repeat(70) + '\n\n';
   
-  // Category 1: Declined Clients
   content += '┌────────────────────────────────────────────────────────────────────┐\n';
   content += '│  CATEGORY 1: DECLINED CLIENTS                                      │\n';
   content += `│  Count: ${String(declinedClients.length).padEnd(58)}│\n`;
@@ -549,7 +733,6 @@ function generateClientListsContent() {
   
   content += '─'.repeat(70) + '\n\n';
   
-  // Category 2: Credit Fixed
   content += '┌────────────────────────────────────────────────────────────────────┐\n';
   content += '│  CATEGORY 2: CREDIT FIXED                                          │\n';
   content += `│  Count: ${String(creditFixedClients.length).padEnd(58)}│\n`;
@@ -573,7 +756,6 @@ function generateClientListsContent() {
   
   content += '─'.repeat(70) + '\n\n';
   
-  // Category 3: Purchased Clients
   content += '┌────────────────────────────────────────────────────────────────────┐\n';
   content += '│  CATEGORY 3: PURCHASED CLIENTS                                     │\n';
   content += `│  Count: ${String(purchasedClients.length).padEnd(58)}│\n`;
@@ -600,7 +782,7 @@ function generateClientListsContent() {
   content += `Total Referral Earnings: R${nenguData.totalRewards.toLocaleString()}\n`;
   content += '═'.repeat(70) + '\n';
   content += '\n© 2026 Nungu Tech · Nungu Connect Referral System\n';
-  content += 'This file is auto-generated and updated on every client change.\n';
+  content += 'Data stored in Supabase · Clients table\n';
   
   return content;
 }
@@ -609,7 +791,6 @@ function updateClientListsFile() {
   const content = generateClientListsContent();
   localStorage.setItem('ClientLists.txt', content);
   nenguData.fileLastUpdated = Date.now();
-  localStorage.setItem('nunguConnectDataV2', JSON.stringify(nenguData));
   
   const lastUpdatedEl = document.getElementById('file-last-updated');
   if (lastUpdatedEl) {
@@ -628,8 +809,6 @@ function downloadClientLists() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  
-  // Visual feedback
   showNotification('ClientLists.txt downloaded successfully!');
 }
 
@@ -654,29 +833,39 @@ function showNotification(message) {
   }, 2500);
 }
 
-function loadData() {
-  const saved = localStorage.getItem('nunguConnectDataV2');
-  if (saved) {
-    nenguData = JSON.parse(saved);
-  } else {
-    nenguData.clients = [
-      { id: 'REF-001', name: 'John Smith', contact: '082 111 2222', declinedReason: 'Low credit score', bureauNotes: '', status: 'In Credit Repair', createdAt: Date.now() - 86400000*3 },
-      { id: 'REF-002', name: 'Lisa M.', contact: 'lisa.m@email.com', declinedReason: 'Previous defaults', bureauNotes: '', status: 'In Credit Repair', createdAt: Date.now() - 86400000*2 },
-      { id: 'REF-003', name: 'David P.', contact: '073 444 5555', declinedReason: 'Insufficient income', bureauNotes: '', status: 'Pending', createdAt: Date.now() - 86400000 },
-      { id: 'REF-004', name: 'Mark T.', contact: 'mark.t@email.com', declinedReason: 'No credit history', bureauNotes: 'Credit profile established', status: 'Repaired', createdAt: Date.now() - 86400000*5 },
-      { id: 'REF-005', name: 'Sarah K.', contact: '082 999 8888', declinedReason: 'High debt ratio', bureauNotes: 'Debt reduced, score up 150pts', status: 'Cleared', createdAt: Date.now() - 86400000*4 },
-      { id: 'REF-006', name: 'Peter G.', contact: 'peter.g@email.com', declinedReason: 'Judgment on record', bureauNotes: 'Judgment rescinded', status: 'Repaired', createdAt: Date.now() - 86400000*6 },
-      { id: 'REF-007', name: 'Anna B.', contact: '072 333 4444', declinedReason: 'Low score', bureauNotes: 'Score improved', status: 'Referred Back', createdAt: Date.now() - 86400000*7 },
-    ];
-    nenguData.totalRewards = 0;
-    saveData();
-  }
-  // Generate file on load
-  updateClientListsFile();
+function showErrorNotification(message) {
+  const notif = document.createElement('div');
+  notif.className = 'fixed top-20 right-4 bg-red-500 text-white px-5 py-3 rounded-xl shadow-lg z-[100] fade-in flex items-center gap-2';
+  notif.innerHTML = `
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <span class="text-sm font-medium">${message}</span>
+  `;
+  document.body.appendChild(notif);
+  setTimeout(() => {
+    notif.style.opacity = '0';
+    notif.style.transition = 'opacity 0.3s';
+    setTimeout(() => notif.remove(), 300);
+  }, 3500);
 }
-function saveData() { 
-  localStorage.setItem('nunguConnectDataV2', JSON.stringify(nenguData));
-  updateClientListsFile();
+
+// ============ AUTHENTICATION ============
+function togglePasswordVisibility() {
+  const passwordInput = document.getElementById('login-password');
+  const eyeIcon = document.getElementById('eye-icon');
+  const eyeOffIcon = document.getElementById('eye-off-icon');
+  const toggleBtn = document.getElementById('password-toggle-btn');
+  
+  if (passwordInput.type === 'password') {
+    passwordInput.type = 'text';
+    eyeIcon.classList.add('hidden');
+    eyeOffIcon.classList.remove('hidden');
+    toggleBtn.title = 'Hide password';
+  } else {
+    passwordInput.type = 'password';
+    eyeIcon.classList.remove('hidden');
+    eyeOffIcon.classList.add('hidden');
+    toggleBtn.title = 'Show password';
+  }
 }
 
 function selectRole(role) {
@@ -728,6 +917,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ============ DASHBOARD INIT ============
 function initializeDashboard() {
   document.getElementById('header-user-info').textContent = `${currentUser.username} · ${currentUser.role}`;
   
@@ -828,6 +1018,7 @@ function switchView(view) {
   }
 }
 
+// ============ RENDERING ============
 function renderAll() {
   renderSalesmanDeclined();
   renderSalesmanRepaired();
@@ -837,7 +1028,6 @@ function renderAll() {
   renderWeeklyPerformance();
   document.getElementById('total-rewards').textContent = 'R' + nenguData.totalRewards.toLocaleString();
   
-  // Update file last updated timestamp
   if (nenguData.fileLastUpdated) {
     const lastUpdatedEl = document.getElementById('file-last-updated');
     if (lastUpdatedEl) {
@@ -1083,6 +1273,7 @@ function renderWeeklyPerformance() {
   }).join('');
 }
 
+// ============ MODALS ============
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
@@ -1134,7 +1325,7 @@ function openEditClient(id) {
   openModal('modal-client');
 }
 
-function handleClientSubmit(e) {
+async function handleClientSubmit(e) {
   e.preventDefault();
   const editId = document.getElementById('client-edit-id').value;
   const name = document.getElementById('client-name').value.trim();
@@ -1145,38 +1336,78 @@ function handleClientSubmit(e) {
   
   if (!name || !contact) return;
   
-  if (editId) {
-    const idx = nenguData.clients.findIndex(x => x.id === editId);
-    if (idx !== -1) {
-      const oldStatus = nenguData.clients[idx].status;
-      nenguData.clients[idx].name = name;
-      nenguData.clients[idx].contact = contact;
-      nenguData.clients[idx].declinedReason = reason;
-      nenguData.clients[idx].status = status;
-      nenguData.clients[idx].bureauNotes = bureauNotes;
-      
-      if (oldStatus !== 'Purchased' && status === 'Purchased') {
-        nenguData.totalRewards += REWARD;
-      }
-      if (oldStatus === 'Purchased' && status !== 'Purchased') {
-        nenguData.totalRewards = Math.max(0, nenguData.totalRewards - REWARD);
-      }
-    }
-  } else {
-    const newId = 'REF-' + String(nenguData.clients.length + 1).padStart(3, '0');
-    nenguData.clients.unshift({
-      id: newId, name, contact, declinedReason: reason, bureauNotes,
-      status: currentUser.role === 'Referral Coordinator' ? status : 'Declined',
-      createdAt: Date.now()
-    });
-  }
+  const saveBtn = document.getElementById('btn-save-client');
+  const originalText = saveBtn.textContent;
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+  saveBtn.classList.add('opacity-60');
   
-  saveData();
-  renderAll();
-  closeModal('modal-client');
+  try {
+    if (editId) {
+      // Update existing
+      const idx = nenguData.clients.findIndex(x => x.id === editId);
+      if (idx !== -1) {
+        const oldStatus = nenguData.clients[idx].status;
+        const updates = {
+          name, contact, declinedReason: reason, status, bureauNotes
+        };
+        
+        // Try Supabase first
+        if (dbConnectionStatus === 'online') {
+          try {
+            await updateClient(editId, updates);
+          } catch (err) {
+            console.warn('Supabase update failed, using local:', err);
+            updateDbStatus('offline');
+          }
+        }
+        
+        nenguData.clients[idx] = { ...nenguData.clients[idx], ...updates };
+        
+        if (oldStatus !== 'Purchased' && status === 'Purchased') {
+          nenguData.totalRewards += REWARD;
+        }
+        if (oldStatus === 'Purchased' && status !== 'Purchased') {
+          nenguData.totalRewards = Math.max(0, nenguData.totalRewards - REWARD);
+        }
+      }
+    } else {
+      // Insert new
+      const newId = 'REF-' + String(nenguData.clients.length + 1).padStart(3, '0');
+      const newClient = {
+        id: newId, name, contact, declinedReason: reason, bureauNotes,
+        status: currentUser.role === 'Referral Coordinator' ? status : 'Declined',
+        createdAt: Date.now()
+      };
+      
+      // Try Supabase first
+      if (dbConnectionStatus === 'online') {
+        try {
+          await insertClient(newClient);
+        } catch (err) {
+          console.warn('Supabase insert failed, using local:', err);
+          updateDbStatus('offline');
+        }
+      }
+      
+      nenguData.clients.unshift(newClient);
+    }
+    
+    await saveData();
+    renderAll();
+    closeModal('modal-client');
+    showNotification(editId ? 'Client updated successfully!' : 'Client added successfully!');
+  } catch (error) {
+    console.error('Save error:', error);
+    showErrorNotification('Failed to save: ' + error.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalText;
+    saveBtn.classList.remove('opacity-60');
+  }
 }
 
-function deleteClient() {
+async function deleteClient() {
   const editId = document.getElementById('client-edit-id').value;
   if (!editId) return;
   
@@ -1188,12 +1419,24 @@ function deleteClient() {
     if (c.status === 'Purchased') {
       nenguData.totalRewards = Math.max(0, nenguData.totalRewards - REWARD);
     }
+    
+    // Try Supabase delete
+    if (dbConnectionStatus === 'online') {
+      try {
+        await deleteClientFromDb(editId);
+      } catch (err) {
+        console.warn('Supabase delete failed:', err);
+        updateDbStatus('offline');
+      }
+    }
+    
     nenguData.clients.splice(idx, 1);
   }
   
-  saveData();
+  await saveData();
   renderAll();
   closeModal('modal-client');
+  showNotification('Client deleted');
 }
 
 function openForwardToBureauModal() {
@@ -1213,9 +1456,21 @@ function openForwardToBureauModal() {
   openModal('modal-forward');
 }
 
-function forwardToBureau(id) {
+async function forwardToBureau(id) {
   const c = nenguData.clients.find(x => x.id === id);
-  if (c) { c.status = 'In Credit Repair'; saveData(); renderAll(); }
+  if (c) {
+    c.status = 'In Credit Repair';
+    if (dbConnectionStatus === 'online') {
+      try {
+        await updateClient(id, { status: 'In Credit Repair' });
+      } catch (err) {
+        console.warn('Supabase update failed:', err);
+        updateDbStatus('offline');
+      }
+    }
+    await saveData();
+    renderAll();
+  }
   closeModal('modal-forward');
 }
 
@@ -1236,9 +1491,21 @@ function openSendBackModal() {
   openModal('modal-sendback');
 }
 
-function sendBack(id) {
+async function sendBack(id) {
   const c = nenguData.clients.find(x => x.id === id);
-  if (c) { c.status = 'Referred Back'; saveData(); renderAll(); }
+  if (c) {
+    c.status = 'Referred Back';
+    if (dbConnectionStatus === 'online') {
+      try {
+        await updateClient(id, { status: 'Referred Back' });
+      } catch (err) {
+        console.warn('Supabase update failed:', err);
+        updateDbStatus('offline');
+      }
+    }
+    await saveData();
+    renderAll();
+  }
   closeModal('modal-sendback');
 }
 
@@ -1249,7 +1516,7 @@ function openPurchaseModal(id) {
   openModal('modal-purchase');
 }
 
-function confirmPurchase() {
+async function confirmPurchase() {
   const id = document.getElementById('purchase-client-id').value;
   const vehicle = document.getElementById('purchase-vehicle').value.trim();
   const c = nenguData.clients.find(x => x.id === id);
@@ -1257,8 +1524,19 @@ function confirmPurchase() {
     c.status = 'Purchased';
     if (vehicle) c.vehicle = vehicle;
     nenguData.totalRewards += REWARD;
-    saveData();
+    
+    if (dbConnectionStatus === 'online') {
+      try {
+        await updateClient(id, { status: 'Purchased', vehicle: vehicle || null });
+      } catch (err) {
+        console.warn('Supabase update failed:', err);
+        updateDbStatus('offline');
+      }
+    }
+    
+    await saveData();
     renderAll();
+    showNotification('Purchase confirmed! R5000 reward added.');
   }
   closeModal('modal-purchase');
 }
@@ -1267,8 +1545,23 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
   ov.addEventListener('click', e => { if (e.target === ov) ov.classList.add('hidden'); });
 });
 
-loadData();
-selectRole('coordinator');
+// ============ INITIALIZATION ============
+async function init() {
+  try {
+    await loadData();
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+    selectRole('coordinator');
+  } catch (error) {
+    console.error('Initialization error:', error);
+    // Show login anyway with offline data
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+    selectRole('coordinator');
+  }
+}
+
+init();
 </script>
 </body>
 </html>
